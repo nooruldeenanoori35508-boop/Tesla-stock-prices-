@@ -1,0 +1,116 @@
+Tesla = [...
+228.52 207.47 195.97 180.19 182.86 194.86 179.05 150.23 123.15 123.18 113.06 122.40 ...
+133.42 177.90 189.98 196.89 208.31 196.88 197.79 173.44 180.13 190.41 207.46 185.06 ...
+185.00 165.08 164.31 170.06 167.98 180.14 193.17 213.97 244.40 260.54 256.60 261.77 ...
+274.43 281.38 260.02 266.44 253.86 242.65 215.49 238.59 245.01 248.50 274.39 244.88 ...
+250.22 260.53 251.12 211.99 207.30 219.96 214.65 234.30 235.45 238.83 243.84 253.50 ...
+252.54 248.48 237.49 218.89 212.19 183.25 187.91 193.57 199.95 191.97 202.64 175.34 ...
+163.57 170.83 175.79 164.90 171.05 147.05 168.29 181.19 168.47 177.46 179.24 178.08 ...
+177.48 178.01 183.01 197.88 251.52 248.23 239.20 219.80 207.67 200.00 216.12 220.32 ...
+214.11 210.73 230.29 238.25 260.46 250.08 217.80 220.70 269.19 248.98 321.22 320.72 ...
+352.56 345.16 389.22 436.23 421.06 431.66 410.44 394.74 426.50 406.58 404.60 361.62 ...
+355.84 337.80 292.98 262.67 249.98 248.71 263.55 239.43 252.31 241.37 284.95 287.21 ...
+298.26 349.98 339.34 346.46 295.14 325.31 322.16 323.63 315.35 313.51 329.65 316.06 ...
+]; 
+ts = Tesla (:);
+
+figure;
+plot(ts, 'b', 'LineWidth', 2);
+title('The time Series is Tesla Stock Price History', 'FontSize', 14);
+xlabel('week', 'FontSize', 12);
+ylabel('Tesla Stock Price in dollar', 'FontSize', 12);
+grid on;
+
+trend = movmean(ts, 12);
+seasonal = ts - trend;   
+residual = ts - trend - seasonal; 
+
+figure;
+plot(trend, 'r', 'LineWidth', 2);
+title('Trend', 'FontSize', 14);
+xlabel('weeks', 'FontSize', 12);
+ylabel('value', 'FontSize', 12);
+grid on;
+
+figure;
+plot(seasonal, 'g', 'LineWidth', 2);
+title('seasonal', 'FontSize', 14);
+xlabel('weeks', 'FontSize', 12);
+ylabel('value', 'FontSize', 12);
+grid on;
+
+figure;
+plot(residual, 'm', 'LineWidth', 2);
+title('Remainder', 'FontSize', 14);
+xlabel('weeks', 'FontSize', 12);
+ylabel('value', 'FontSize', 12);
+grid on;
+
+net_trend = newrb(1:length(trend), trend', 0.001, 1, 97); 
+net_seasonal = newrb(1:length(seasonal), seasonal', 0.001, 1, 97);
+net_residual = newrb(1:length(residual), residual', 0.001, 1, 97);
+
+pred_trend = sim(net_trend, 1:length(trend));
+pred_seasonal = sim(net_seasonal, 1:length(seasonal));
+pred_residual = sim(net_residual, 1:length(residual));
+
+figure;
+plot(trend, 'r', 'LineWidth', 2);
+hold on;
+plot(pred_trend, 'b--', 'LineWidth', 2);
+title('Trend:Training and prediction','fontSize',14);
+xlabel('weeks', 'FontSize', 12);
+ylabel('value', 'FontSize', 12);
+legend('Trend forecasting','The original Trend','location','best');
+grid on;
+
+figure;
+plot(seasonal, 'g', 'LineWidth', 2);
+hold on;
+plot(pred_seasonal, 'b--', 'LineWidth', 2);
+title('Seasonal:Training and prediction','fontSize',14);
+xlabel('weeks', 'FontSize', 12);
+ylabel('value', 'FontSize', 12);
+legend('Seasonal forecasting','The original Seasonal','location','best');
+grid on;
+
+figure;
+plot(residual, 'm', 'LineWidth', 2);
+hold on;
+plot(pred_residual, 'b--', 'LineWidth', 2);
+title('Remainder:Training and prediction','fontSize',14);
+xlabel('weeks', 'FontSize', 12);
+ylabel('value', 'FontSize', 12);
+legend('Dispersion forecasting','The original Dispersion','location','best');
+grid on;
+
+predicted_ts = pred_trend + pred_seasonal + pred_residual;
+
+figure;
+plot(ts, 'b', 'LineWidth', 2);
+hold on;
+plot(predicted_ts, 'r--', 'LineWidth', 2);
+title('Original series and predictions', 'FontSize', 14);
+xlabel('weeks', 'FontSize', 12);
+ylabel('Tesla Stock Price History', 'FontSize', 12);
+legend('traning three components+Predictions fist 10 observation','orginal', 'Location', 'best');
+grid on;
+
+last_10_original = predicted_ts(end-9:end)
+last_10_predicted = [339.34; 346.46; 295.14; 325.31; 322.16; 323.63; 315.35; 313.51; 329.65; 316.06];
+
+figure;
+plot(last_10_original, 'b', 'LineWidth', 2);
+hold on;
+plot(last_10_predicted, 'r--', 'LineWidth', 2);
+title('Comparison between original series and predictions (last 10 observation)', 'FontSize', 14);
+xlabel('Week', 'FontSize', 12);
+ylabel('Tesla Stock Price History', 'FontSize', 12);
+legend('Predictions','Tesla Stock Price History', 'Location', 'best');
+grid on;
+mse = mean((last_10_original - last_10_predicted').^2);
+rmse = sqrt(mse);
+
+fprintf('MSE: %.4f\n', mse);
+fprintf('RMSE: %.4f\n', rmse);
+
